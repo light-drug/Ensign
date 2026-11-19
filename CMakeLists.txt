@@ -354,6 +354,7 @@ target_include_directories(Ensign
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_subdirectory(tests)
   add_subdirectory(examples)
+  add_subdirectory(my-examples)
 endif()
 
 
