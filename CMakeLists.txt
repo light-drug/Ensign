@@ -334,6 +334,7 @@ add_library(Ensign
 )
 endif()
 
+target_sources(Ensign PRIVATE src/generic/optparser.cpp)
 add_library(Ensign::Ensign ALIAS Ensign)
 add_dependencies(Ensign fftw eigen)
 if(${NETCDF_ADD_DEPENDENCY})
