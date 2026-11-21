@@ -16,6 +16,6 @@ if(NOT CUDA_ENABLED)
 endif()
 
 if(NOT CUDA_ENABLED)
-  add_executable(vlasov_poisson_test vlasov_poisson_test.cpp)
-  target_link_libraries(vlasov_poisson_test PRIVATE Ensign::Ensign)
+  add_executable(vlasov_poisson1D_test vlasov_poisson1D_test.cpp)
+  target_link_libraries(vlasov_poisson1D_test PRIVATE Ensign::Ensign)
 endif()
