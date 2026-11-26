@@ -110,6 +110,65 @@ int isValidAsDouble(char * s)
    }
 }
 
+static bool ParseVectorArg(const char* s, multi_array<double,1> &out)
+{
+   if (s == nullptr || *s == '\0') { return false; }
+
+   std::string str(s);
+
+   // Trim leading/trailing spaces
+   auto ltrim = [](std::string &x)
+   {
+      size_t p = x.find_first_not_of(" \t\n\r");
+      x = (p == std::string::npos) ? std::string() : x.substr(p);
+   };
+   auto rtrim = [](std::string &x)
+   {
+      size_t p = x.find_last_not_of(" \t\n\r");
+      x = (p == std::string::npos) ? std::string() : x.substr(0, p + 1);
+   };
+
+   ltrim(str); rtrim(str);
+   if (str.empty()) { return false; }
+
+   // Optional [ ... ]
+   if (str.front() == '[') { str.erase(str.begin()); }
+   ltrim(str); rtrim(str);
+   if (!str.empty() && str.back() == ']') { str.pop_back(); }
+   ltrim(str); rtrim(str);
+
+   if (str.empty()) { return false; }
+
+   // allow comma/semicolon separated
+   for (char &c : str)
+   {
+      if (c == ',' || c == ';') { c = ' '; }
+   }
+
+   std::stringstream ss(str);
+   std::vector<double> vals;
+   double x;
+
+   while (true)
+   {
+      // Skip spaces
+      ss >> std::ws;
+      if (ss.eof()) { break; }
+
+      if (!(ss >> x))
+      {
+         return false; // invalid token
+      }
+      vals.push_back(x);
+   }
+
+   if (vals.empty()) { return false; }
+
+   out.resize({vals.size()});
+   for (Index i = 0; i < vals.size(); i++) { out(i) = vals[i]; }
+   return true;
+}
+
 void OptionsParser::Parse()
 {
    option_check.resize(options.size(),0);
@@ -123,7 +182,7 @@ void OptionsParser::Parse()
          return;
       }
 
-      for (int j = 0; true; j++)
+      for (Index j = 0; true; j++)
       {
          if (j >= options.size())
          {
@@ -176,6 +235,13 @@ void OptionsParser::Parse()
                case STD_STRING:
                   *(std::string *)(options[j].var_ptr) = argv[i++];
                   break;
+               case VECTOR:
+                {
+                  multi_array<double,1> &v = *(multi_array<double,1> *)(options[j].var_ptr);
+                  isValid = ParseVectorArg(argv[i], v) ? 1 : 0;
+                  i++;
+                  break;
+                }
                case ENABLE:
                   *(bool *)(options[j].var_ptr) = true;
                   option_check[j+1] = 1;  // Do not allow the DISABLE Option
@@ -247,6 +313,19 @@ void OptionsParser::WriteValue(const Option &opt, std::ostream &os)
       case STD_STRING:
          os << *(std::string *)(opt.var_ptr);
          break;
+
+      case VECTOR:
+      {
+        const multi_array<double,1> &v = *(const multi_array<double,1> *)(opt.var_ptr);
+        os << "[";
+        for (Index i = 0; i < v.shape()[0]; i++)
+        {
+          os << v(i);
+          if (i + 1 < v.shape()[0]) { os << " "; }
+        }
+        os << "]";
+        break;
+      }
 
       default: // provide a default to suppress warning
          break;
@@ -334,12 +413,18 @@ void OptionsParser::PrintHelp(std::ostream &os) const
    static const char *descr_sep = "\n\t";
    static const char *line_sep = "";
    static const char *types[] = {
-      " <int>", " <float>", " <double>", " <string>", " <string>", "", ""
-   };
+      " <int>",       // INT
+      " <double>",    // DOUBLE
+      " <string>",    // STRING
+      " <string>",    // STD_STRING
+      " '<vector>.'", // VECTOR
+      "",             // ENABLE
+      ""              // DISABLE
+    };
 
    os << indent << "-h" << seprtr << "--help" << descr_sep
       << "Print this help message and exit.\n" << line_sep;
-   for (int j = 0; j < options.size(); j++)
+   for (Index j = 0; j < options.size(); j++)
    {
       OptionType type = options[j].type;
 

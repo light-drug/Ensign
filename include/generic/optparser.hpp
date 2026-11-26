@@ -14,6 +14,8 @@
 #include <string>
 #include <iostream>
 
+#include <generic/storage.hpp>
+
 namespace Ensign
 {
 
@@ -26,7 +28,7 @@ namespace Ensign
 class OptionsParser
 {
 public:
-   enum OptionType { INT, FLOAT, DOUBLE, STRING, STD_STRING, ENABLE, DISABLE};
+   enum OptionType { INT, FLOAT, DOUBLE, STRING, STD_STRING, VECTOR, ENABLE, DISABLE};
 
 private:
    struct Option
@@ -135,6 +137,14 @@ public:
       options.emplace_back(Option(STD_STRING, var, short_name, long_name, description,
                             required));
    }
+
+   void AddOption(multi_array<double,1> *var, const char *short_name,
+                const char *long_name, const char *description,
+                bool required = false)
+  {
+    options.emplace_back(Option(VECTOR, var, short_name, long_name, description,
+                          required));
+  }
 
    /** @brief Parse the command-line options.
        Note that this function expects all the options provided through the
